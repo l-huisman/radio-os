@@ -191,3 +191,24 @@ EOF
     [ "$(grep -o 'video=HDMI-A-1:[^ ]*' "$TEST_ROOT/cmdline.txt")" = 'video=HDMI-A-1:1920x1080@60D' ]
     grep -q '^zswap.enabled=1 .* splash video=HDMI-A-1:1920x1080@60D$' "$TEST_ROOT/cmdline.txt"
 }
+
+@test "the HDMI setting is applied to the current and the pending kernel's boot options" {
+    mkdir -p "$TEST_ROOT/firmware/current" "$TEST_ROOT/firmware/new"
+    cp "$BATS_TEST_DIRNAME/fixtures/ubuntu-26.04/cmdline.txt" "$TEST_ROOT/firmware/current/cmdline.txt"
+    cp "$BATS_TEST_DIRNAME/fixtures/ubuntu-26.04/cmdline.txt" "$TEST_ROOT/firmware/new/cmdline.txt"
+
+    force_hdmi_output_on_boot_assets "$TEST_ROOT/firmware"
+
+    grep -q 'video=HDMI-A-1:1920x1080@60D' "$TEST_ROOT/firmware/current/cmdline.txt"
+    grep -q 'video=HDMI-A-1:1920x1080@60D' "$TEST_ROOT/firmware/new/cmdline.txt"
+}
+
+@test "the HDMI setting skips a pending kernel folder that does not exist" {
+    mkdir -p "$TEST_ROOT/firmware/current"
+    cp "$BATS_TEST_DIRNAME/fixtures/ubuntu-26.04/cmdline.txt" "$TEST_ROOT/firmware/current/cmdline.txt"
+
+    run force_hdmi_output_on_boot_assets "$TEST_ROOT/firmware"
+
+    [ "$status" -eq 0 ]
+    [ ! -e "$TEST_ROOT/firmware/new" ]
+}

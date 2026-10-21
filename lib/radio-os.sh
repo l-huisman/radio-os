@@ -24,6 +24,18 @@ force_hdmi_output() {
     sed -i -e 's/ *video=HDMI-A-1:[^ ]*//' -e 's/$/ video=HDMI-A-1:1920x1080@60D/' "$cmdline"
 }
 
+# Applies force_hdmi_output to the boot options of the running kernel and, when
+# an update has staged one, of the next kernel.
+force_hdmi_output_on_boot_assets() {
+    local firmware=$1 assets
+
+    for assets in current new; do
+        if [[ -e "$firmware/$assets/cmdline.txt" ]]; then
+            force_hdmi_output "$firmware/$assets/cmdline.txt"
+        fi
+    done
+}
+
 configure_gdm_autologin() {
     local config=$1 user=$2
 

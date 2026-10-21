@@ -13,7 +13,7 @@ RADIO_USER=${1:?usage: setup/system.sh <user>}
 RADIO_HOSTNAME=radio
 GITHUB_KEYS_URL=https://github.com/l-huisman.keys
 BOOT_CONFIG=/boot/firmware/config.txt
-KERNEL_CMDLINE=/boot/firmware/current/cmdline.txt
+BOOT_FIRMWARE=/boot/firmware
 
 step() {
     printf '\n==> %s\n' "$*"
@@ -50,7 +50,11 @@ configure_audio() {
 
 configure_display() {
     step "Keeping the HDMI output on without a monitor, for remote desktop"
-    force_hdmi_output "$KERNEL_CMDLINE"
+    force_hdmi_output_on_boot_assets "$BOOT_FIRMWARE"
+
+    install -D -m 644 "$radio_os_dir/lib/radio-os.sh" /usr/local/lib/radio-os/radio-os.sh
+    install -m 755 "$radio_os_dir/bin/radio-boot-hdmi-hook" /etc/initramfs/post-update.d/zz-radio-os-hdmi
+    install -m 755 "$radio_os_dir/bin/radio-boot-hdmi-hook" /etc/kernel/postinst.d/zzz-radio-os-hdmi
 }
 
 configure_sdr_access() {

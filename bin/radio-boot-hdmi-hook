@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Kernel and initramfs update hook. Runs after flash-kernel has written the
+# Pi's boot files and puts the forced HDMI output back into their options.
+set -euo pipefail
+
+# shellcheck source=lib/radio-os.sh
+source /usr/local/lib/radio-os/radio-os.sh
+force_hdmi_output_on_boot_assets /boot/firmware
