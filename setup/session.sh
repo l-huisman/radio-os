@@ -29,6 +29,13 @@ configure_remote_desktop() {
     systemctl --user enable --now gnome-remote-desktop.service
 }
 
+set_full_output_level() {
+    step "Setting the HiFiBerry output to full level, the amplifier sets the loudness"
+    amixer -c sndrpihifiberry sset Digital 100% > /dev/null || true
+    wpctl set-volume @DEFAULT_AUDIO_SINK@ 1.0 || true
+    wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 || true
+}
+
 trust_desktop_icon() {
     local desktop_dir
     desktop_dir=$(xdg-user-dir DESKTOP)
@@ -45,6 +52,7 @@ fi
 : "${RDP_USER:?RDP_USER is not set}" "${RDP_PASSWORD:?RDP_PASSWORD is not set}"
 
 configure_remote_desktop
+set_full_output_level
 trust_desktop_icon
 
 if [[ "${1:-}" == "--firstboot" ]]; then

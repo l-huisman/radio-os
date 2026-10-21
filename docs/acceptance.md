@@ -8,6 +8,7 @@ Run through this on the Pi after `install.sh` and the first reboot.
 - [ ] The tuner opens maximized, tuned to 828 kHz, with the 9 kHz notch selected.
 - [ ] The device label shows the RTL-SDR, and Ellen AM is audible.
 - [ ] Sound comes from the HiFiBerry RCA outputs. `aplay -l` lists a `sndrpihifiberry` card and no `bcm2835` headphones card.
+- [ ] After a reboot, `amixer -c sndrpihifiberry sget Digital` still shows 100% and `wpctl get-volume @DEFAULT_AUDIO_SINK@` shows 1.00.
 - [ ] `journalctl --user -u radio-os-health` shows `radio is healthy` about two minutes after login.
 
 ## Restart behaviour
