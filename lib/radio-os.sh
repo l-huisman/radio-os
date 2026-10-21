@@ -19,13 +19,30 @@ configure_boot_audio() {
 configure_gdm_autologin() {
     local config=$1 user=$2
 
-    sed -i -e '/^AutomaticLoginEnable=/d' -e '/^AutomaticLogin=/d' "$config"
+    sed -i -e '/^AutomaticLoginEnable=/d' -e '/^AutomaticLogin=/d' -e '/^InitialSetupEnable=/d' "$config"
 
     if ! grep -qx '\[daemon\]' "$config"; then
         printf '\n[daemon]\n' >> "$config"
     fi
 
-    sed -i "/^\[daemon\]\$/a AutomaticLoginEnable=true\nAutomaticLogin=$user" "$config"
+    sed -i "/^\[daemon\]\$/a AutomaticLoginEnable=true\nAutomaticLogin=$user\nInitialSetupEnable=false" "$config"
+}
+
+# Creates a login keyring without a password. gnome-keyring keeps such a keyring
+# as plain text and opens it unlocked, also after an automatic login.
+write_empty_login_keyring() {
+    local keyrings=$1
+
+    if [[ -e "$keyrings/login.keyring" ]]; then
+        echo "$keyrings/login.keyring already exists" >&2
+        return 1
+    fi
+
+    install -d -m 700 "$keyrings"
+    printf '[keyring]\ndisplay-name=Login\nctime=0\nmtime=0\nlock-on-idle=false\nlock-after=false\n' \
+        > "$keyrings/login.keyring"
+    chmod 600 "$keyrings/login.keyring"
+    echo login > "$keyrings/default"
 }
 
 # Writes the first-launch tuner settings, unless the tuner has saved its own.

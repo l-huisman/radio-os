@@ -1,0 +1,12 @@
+[Unit]
+Description=Finish the radio setup on the first login
+After=graphical-session.target
+ConditionPathExists=%h/.config/radio-os/firstboot.env
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/sleep 15
+ExecStart=%h/radio-os/setup/session.sh --firstboot
+
+[Install]
+WantedBy=graphical-session.target

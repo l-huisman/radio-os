@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "== shellcheck"
-shellcheck --external-sources install.sh bin/* lib/*.sh tests/*.sh tests/fixtures/*
+shellcheck --external-sources install.sh bin/* lib/*.sh setup/*.sh image/*.sh tests/*.sh tests/fixtures/*-builder
 
 echo "== bats"
 bats tests/

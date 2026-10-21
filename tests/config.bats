@@ -11,29 +11,7 @@ teardown() {
 }
 
 ubuntu_boot_config() {
-    cat > "$TEST_ROOT/config.txt" <<'EOF'
-[all]
-kernel=vmlinuz
-cmdline=cmdline.txt
-initramfs initrd.img followkernel
-
-[pi4]
-max_framebuffers=2
-arm_boost=1
-
-[all]
-# Enable the audio output, I2C and SPI interfaces on the GPIO header. As these
-# parameters related to the base device-tree they must appear *before* any
-# other dtoverlay= specification
-dtparam=audio=on
-dtparam=i2c_arm=on
-dtparam=spi=on
-
-# Enable the KMS ("full" KMS) graphics overlay, leaving GPU memory as the
-# default (the kernel is in control of graphics memory with full KMS)
-dtoverlay=vc4-kms-v3d
-disable_fw_kms_setup=1
-EOF
+    cp "$BATS_TEST_DIRNAME/fixtures/ubuntu-26.04/config.txt" "$TEST_ROOT/config.txt"
 }
 
 @test "boot config turns onboard audio off in place" {
@@ -44,7 +22,7 @@ EOF
     grep -qx 'dtparam=audio=off' "$TEST_ROOT/config.txt"
     ! grep -q 'dtparam=audio=on' "$TEST_ROOT/config.txt"
     [ "$(grep -n 'dtparam=audio=off' "$TEST_ROOT/config.txt" | cut -d: -f1)" -lt \
-      "$(grep -n 'dtoverlay=vc4-kms-v3d' "$TEST_ROOT/config.txt" | cut -d: -f1)" ]
+      "$(grep -n '^dtoverlay=vc4-kms-v3d' "$TEST_ROOT/config.txt" | head -n 1 | cut -d: -f1)" ]
 }
 
 @test "boot config turns HDMI audio off" {
@@ -169,4 +147,36 @@ EOF
 
     run dock_favorites_with "@as []" radio-os-tuner.desktop
     [ "$output" = "['radio-os-tuner.desktop']" ]
+}
+
+@test "an empty-password login keyring is created as the default keyring" {
+    write_empty_login_keyring "$TEST_ROOT/keyrings"
+
+    [ "$(cat "$TEST_ROOT/keyrings/default")" = login ]
+    grep -qx '\[keyring\]' "$TEST_ROOT/keyrings/login.keyring"
+    grep -qx 'display-name=Login' "$TEST_ROOT/keyrings/login.keyring"
+    grep -qx 'lock-on-idle=false' "$TEST_ROOT/keyrings/login.keyring"
+    grep -qx 'lock-after=false' "$TEST_ROOT/keyrings/login.keyring"
+    [ "$(stat -c %a "$TEST_ROOT/keyrings")" = 700 ]
+    [ "$(stat -c %a "$TEST_ROOT/keyrings/login.keyring")" = 600 ]
+}
+
+@test "an existing login keyring is never replaced" {
+    mkdir -p "$TEST_ROOT/keyrings"
+    echo encrypted > "$TEST_ROOT/keyrings/login.keyring"
+
+    run write_empty_login_keyring "$TEST_ROOT/keyrings"
+
+    [ "$status" -ne 0 ]
+    [ "$(cat "$TEST_ROOT/keyrings/login.keyring")" = encrypted ]
+}
+
+@test "GDM never starts the first-boot setup wizard" {
+    gdm_config
+    configure_gdm_autologin "$TEST_ROOT/custom.conf" ellenam
+
+    configure_gdm_autologin "$TEST_ROOT/custom.conf" ellenam
+
+    run awk '/^\[/{section=$0} /^InitialSetupEnable/{print section ":" $0}' "$TEST_ROOT/custom.conf"
+    [ "$output" = '[daemon]:InitialSetupEnable=false' ]
 }
