@@ -16,6 +16,14 @@ configure_boot_audio() {
     fi
 }
 
+# Forces the first HDMI port on at 1080p, so the desktop (and remote desktop,
+# which mirrors it) has a screen even when no monitor is connected.
+force_hdmi_output() {
+    local cmdline=$1
+
+    sed -i -e 's/ *video=HDMI-A-1:[^ ]*//' -e 's/$/ video=HDMI-A-1:1920x1080@60D/' "$cmdline"
+}
+
 configure_gdm_autologin() {
     local config=$1 user=$2
 

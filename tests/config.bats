@@ -180,3 +180,14 @@ EOF
     run awk '/^\[/{section=$0} /^InitialSetupEnable/{print section ":" $0}' "$TEST_ROOT/custom.conf"
     [ "$output" = '[daemon]:InitialSetupEnable=false' ]
 }
+
+@test "the first HDMI port is forced on so remote desktop has a screen without a monitor" {
+    cp "$BATS_TEST_DIRNAME/fixtures/ubuntu-26.04/cmdline.txt" "$TEST_ROOT/cmdline.txt"
+
+    force_hdmi_output "$TEST_ROOT/cmdline.txt"
+    force_hdmi_output "$TEST_ROOT/cmdline.txt"
+
+    [ "$(wc -l < "$TEST_ROOT/cmdline.txt")" -eq 1 ]
+    [ "$(grep -o 'video=HDMI-A-1:[^ ]*' "$TEST_ROOT/cmdline.txt")" = 'video=HDMI-A-1:1920x1080@60D' ]
+    grep -q '^zswap.enabled=1 .* splash video=HDMI-A-1:1920x1080@60D$' "$TEST_ROOT/cmdline.txt"
+}

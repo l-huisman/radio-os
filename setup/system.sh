@@ -13,6 +13,7 @@ RADIO_USER=${1:?usage: setup/system.sh <user>}
 RADIO_HOSTNAME=radio
 GITHUB_KEYS_URL=https://github.com/l-huisman.keys
 BOOT_CONFIG=/boot/firmware/config.txt
+KERNEL_CMDLINE=/boot/firmware/current/cmdline.txt
 
 step() {
     printf '\n==> %s\n' "$*"
@@ -45,6 +46,11 @@ configure_audio() {
     configure_boot_audio "$BOOT_CONFIG"
     install -D -m 644 "$radio_os_dir/config/wireplumber-hifiberry.conf" \
         /etc/wireplumber/wireplumber.conf.d/51-radio-os-hifiberry.conf
+}
+
+configure_display() {
+    step "Keeping the HDMI output on without a monitor, for remote desktop"
+    force_hdmi_output "$KERNEL_CMDLINE"
 }
 
 configure_sdr_access() {
@@ -93,6 +99,7 @@ install_commands() {
 install_packages
 configure_hostname
 configure_audio
+configure_display
 configure_sdr_access
 configure_autologin
 configure_ssh
