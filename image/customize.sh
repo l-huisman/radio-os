@@ -13,7 +13,7 @@ boot_loop=
 
 cleanup() {
     rm -f "$target/usr/sbin/policy-rc.d"
-    if [[ -e "$target/etc/resolv.conf.radio-os" ]]; then
+    if [[ -L "$target/etc/resolv.conf.radio-os" ]]; then
         mv -f "$target/etc/resolv.conf.radio-os" "$target/etc/resolv.conf"
     fi
     rm -rf "$target/tmp/radio-os"
