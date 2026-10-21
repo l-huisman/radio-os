@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Checks what the radio needs after boot and logs a warning to the journal for
+# anything missing. Read the result with: journalctl --user -u radio-os-health
+set -uo pipefail
+
+healthy=true
+
+warn() {
+    echo "<4>$*"
+    healthy=false
+}
+
+if ! systemctl --user is-active --quiet radio-os-tuner.service; then
+    warn "the tuner is not running"
+fi
+
+if ! grep -qs hifiberry /proc/asound/cards; then
+    warn "the HiFiBerry sound card was not found"
+fi
+
+if ! grep -qsx 2838 /sys/bus/usb/devices/*/idProduct; then
+    warn "the RTL-SDR dongle was not found"
+fi
+
+keyring=$(gdbus call --session --dest org.freedesktop.secrets \
+    --object-path /org/freedesktop/secrets/collection/login \
+    --method org.freedesktop.DBus.Properties.Get org.freedesktop.Secret.Collection Locked 2>&1)
+if [[ "$keyring" != "(<false>,)" ]]; then
+    warn "the login keyring is locked, so remote desktop cannot read its password ($keyring)"
+fi
+
+if ! ss -Hltn 'sport = :3389' | grep -q .; then
+    warn "remote desktop is not listening on port 3389"
+fi
+
+if $healthy; then
+    echo "<6>radio is healthy"
+fi

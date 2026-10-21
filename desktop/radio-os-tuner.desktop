@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Radio
+Comment=AM stereo tuner (C-QUAM)
+Exec=sh -c "systemctl --user reset-failed radio-os-tuner.service; systemctl --user start radio-os-tuner.service"
+Icon=radio-os-tuner
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupWMClass=am_stereo_receiver

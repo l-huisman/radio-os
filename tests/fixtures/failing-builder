@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stands in for a CMake build that fails to compile.
+echo "error: simulated compile failure" >&2
+exit 1

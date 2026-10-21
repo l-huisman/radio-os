@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# Builds and switches the AM stereo tuner.
+#
+#   radio-update              build the latest upstream main
+#   radio-update <commit>     build a specific upstream commit
+#   radio-update --rollback   switch back to the previous build
+#   radio-update --status     show the current and previous commits
+set -euo pipefail
+
+radio_os_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)
+
+RADIO_HOME=${RADIO_HOME:-$HOME/.local/share/radio}
+RADIO_UPSTREAM=${RADIO_UPSTREAM:-https://github.com/VK4MTV/CQUAM-AM-Stereo-Universal-Tuner-for-GNUradio.git}
+RADIO_PATCHES_DIR=${RADIO_PATCHES_DIR:-$radio_os_dir/patches}
+RADIO_BUILDER=${RADIO_BUILDER:-cmake_build}
+RADIO_RESTART=${RADIO_RESTART:-restart_tuner}
+
+mirror=$RADIO_HOME/upstream.git
+builds=$RADIO_HOME/builds
+
+log() {
+    echo "radio-update: $*" >&2
+}
+
+cmake_build() {
+    local source_dir=$1 build_dir=$2
+    cmake -S "$source_dir/cpp-am-stereo-receiver" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake --build "$build_dir"
+}
+
+restart_tuner() {
+    if systemctl --user is-active --quiet radio-os-tuner.service; then
+        systemctl --user restart radio-os-tuner.service
+    fi
+}
+
+fetch_upstream() {
+    if [[ -d "$mirror" ]]; then
+        git -C "$mirror" fetch --quiet --prune origin '+refs/heads/*:refs/heads/*'
+    else
+        mkdir -p "$RADIO_HOME"
+        git clone --quiet --mirror "$RADIO_UPSTREAM" "$mirror"
+    fi
+}
+
+commit_of() {
+    local link=$1
+    [[ -L "$link" ]] && basename "$(readlink "$link")"
+}
+
+point() {
+    local link=$1 commit=$2
+    ln -sfn "builds/$commit" "$link.new"
+    mv -T "$link.new" "$link"
+}
+
+prune_builds() {
+    local current previous build
+    current=$(commit_of "$RADIO_HOME/current" || true)
+    previous=$(commit_of "$RADIO_HOME/previous" || true)
+    for build in "$builds"/*; do
+        case $(basename "$build") in
+            "$current" | "$previous") ;;
+            *) rm -rf "$build" ;;
+        esac
+    done
+}
+
+build_commit() {
+    local commit=$1
+    local work=$builds/$commit.partial
+    local patch
+
+    rm -rf "$work"
+    mkdir -p "$work/src"
+    git -C "$mirror" archive "$commit" | tar -x -C "$work/src"
+
+    for patch in "$RADIO_PATCHES_DIR"/*.patch; do
+        [[ -e "$patch" ]] || continue
+        log "applying $(basename "$patch")"
+        if ! git -C "$work/src" apply "$patch"; then
+            log "$(basename "$patch") does not apply to $commit, keeping the current build"
+            rm -rf "$work"
+            return 1
+        fi
+    done
+
+    if ! "$RADIO_BUILDER" "$work/src" "$work/build" || [[ ! -x "$work/build/am_stereo_receiver" ]]; then
+        log "build of $commit failed, keeping the current build"
+        rm -rf "$work"
+        return 1
+    fi
+
+    rm -rf "${builds:?}/$commit"
+    mv "$work" "$builds/$commit"
+}
+
+update() {
+    local revision=${1:-main}
+    local commit current
+
+    fetch_upstream
+    commit=$(git -C "$mirror" rev-parse --verify --quiet "$revision^{commit}") || {
+        log "unknown upstream commit or branch: $revision"
+        return 1
+    }
+
+    current=$(commit_of "$RADIO_HOME/current" || true)
+    if [[ "$commit" == "$current" ]]; then
+        log "already on $commit"
+        return 0
+    fi
+
+    log "building $commit"
+    build_commit "$commit"
+
+    if [[ -n "$current" ]]; then
+        point "$RADIO_HOME/previous" "$current"
+    fi
+    point "$RADIO_HOME/current" "$commit"
+    prune_builds
+    "$RADIO_RESTART"
+    log "switched to $commit"
+}
+
+rollback() {
+    local current previous
+    current=$(commit_of "$RADIO_HOME/current" || true)
+    previous=$(commit_of "$RADIO_HOME/previous" || true)
+
+    if [[ -z "$previous" || ! -d "$builds/$previous" ]]; then
+        log "there is no previous build to roll back to"
+        return 1
+    fi
+
+    point "$RADIO_HOME/current" "$previous"
+    point "$RADIO_HOME/previous" "$current"
+    "$RADIO_RESTART"
+    log "rolled back to $previous"
+}
+
+status() {
+    echo "current:  $(commit_of "$RADIO_HOME/current" || echo none)"
+    echo "previous: $(commit_of "$RADIO_HOME/previous" || echo none)"
+}
+
+case "${1:-}" in
+    --rollback) rollback ;;
+    --status) status ;;
+    -h | --help) sed -n '2,7p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' ;;
+    *) update "$@" ;;
+esac

@@ -1,0 +1,6 @@
+[Unit]
+Description=Radio health check after login
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/radio-health

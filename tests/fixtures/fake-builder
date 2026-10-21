@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Stands in for the CMake build: "builds" a tuner whose binary holds the source VERSION.
+set -euo pipefail
+
+source_dir=$1
+build_dir=$2
+
+mkdir -p "$build_dir"
+cp "$source_dir/VERSION" "$build_dir/am_stereo_receiver"
+chmod +x "$build_dir/am_stereo_receiver"

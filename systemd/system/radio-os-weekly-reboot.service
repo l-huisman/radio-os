@@ -1,0 +1,6 @@
+[Unit]
+Description=Weekly reboot of the radio
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl reboot

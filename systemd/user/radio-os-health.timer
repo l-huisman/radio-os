@@ -1,0 +1,9 @@
+[Unit]
+Description=Radio health check two minutes after login
+PartOf=graphical-session.target
+
+[Timer]
+OnActiveSec=2min
+
+[Install]
+WantedBy=graphical-session.target

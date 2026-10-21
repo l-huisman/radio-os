@@ -1,0 +1,8 @@
+[Unit]
+Description=Weekly reboot of the radio, Monday 04:00
+
+[Timer]
+OnCalendar=Mon *-*-* 04:00:00
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,59 @@
+diff --git a/cpp-am-stereo-receiver/src/main.cpp b/cpp-am-stereo-receiver/src/main.cpp
+index 6e5fc2a..63f4011 100644
+--- a/cpp-am-stereo-receiver/src/main.cpp
++++ b/cpp-am-stereo-receiver/src/main.cpp
+@@ -2,11 +2,46 @@
+ // main.cpp  –  AM Stereo Receiver entry point
+ // ─────────────────────────────────────────────────────────────────────────────
+ #include <QApplication>
++#include <QSocketNotifier>
+ #include <QStyleFactory>
+ #include <iostream>
+ 
++#include <csignal>
++#include <sys/socket.h>
++#include <unistd.h>
++
+ #include "ui/MainWindow.h"
+ 
++// Closes the main window from the Qt event loop on SIGTERM (logout, shutdown,
++// systemctl stop), so closeEvent() saves the settings and stops the radio.
++static int sigtermFds[2];
++
++static void onSigterm(int)
++{
++    const char byte = 1;
++    [[maybe_unused]] const auto written = ::write(sigtermFds[0], &byte, sizeof(byte));
++}
++
++static void closeWindowOnSigterm(QApplication& app, QWidget& window)
++{
++    if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sigtermFds) != 0)
++        return;
++
++    auto* notifier = new QSocketNotifier(sigtermFds[1], QSocketNotifier::Read, &app);
++    QObject::connect(notifier, &QSocketNotifier::activated, &window, [notifier, &window] {
++        notifier->setEnabled(false);
++        char byte;
++        [[maybe_unused]] const auto bytesRead = ::read(sigtermFds[1], &byte, sizeof(byte));
++        window.close();
++    });
++
++    struct sigaction action {};
++    action.sa_handler = onSigterm;
++    sigemptyset(&action.sa_mask);
++    action.sa_flags = SA_RESTART;
++    ::sigaction(SIGTERM, &action, nullptr);
++}
++
+ int main(int argc, char* argv[])
+ {
+     QApplication app(argc, argv);
+@@ -33,6 +68,7 @@ int main(int argc, char* argv[])
+     std::cout << "AM Stereo Receiver v1.0.0 – starting...\n";
+ 
+     MainWindow win;
++    closeWindowOnSigterm(app, win);
+     win.showMaximized();
+ 
+     return app.exec();

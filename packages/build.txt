@@ -1,0 +1,17 @@
+# Packages needed to build and run the tuner. Shared by install.sh and tests/Dockerfile.
+git
+ca-certificates
+cmake
+g++
+ninja-build
+pkg-config
+qt6-base-dev
+qt6-wayland
+libsoapysdr-dev
+soapysdr-tools
+soapysdr-module-rtlsdr
+rtl-sdr
+librtlsdr-dev
+libportaudio2
+portaudio19-dev
+libsoxr-dev

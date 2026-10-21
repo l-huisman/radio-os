@@ -1,0 +1,13 @@
+diff --git a/cpp-am-stereo-receiver/src/main.cpp b/cpp-am-stereo-receiver/src/main.cpp
+index 4be200f..6e5fc2a 100644
+--- a/cpp-am-stereo-receiver/src/main.cpp
++++ b/cpp-am-stereo-receiver/src/main.cpp
+@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
+     std::cout << "AM Stereo Receiver v1.0.0 – starting...\n";
+ 
+     MainWindow win;
+-    win.show();
++    win.showMaximized();
+ 
+     return app.exec();
+ }
