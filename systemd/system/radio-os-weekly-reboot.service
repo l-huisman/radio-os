@@ -3,4 +3,8 @@ Description=Weekly reboot of the radio
 
 [Service]
 Type=oneshot
+# The Pi has no hardware clock, so the time jumps forward at boot once it is
+# synced. That jump can make the timer fire right away. Only reboot after an
+# hour of uptime.
+ExecCondition=/bin/sh -c '[ "$(cut -d. -f1 /proc/uptime)" -ge 3600 ]'
 ExecStart=/usr/bin/systemctl reboot
