@@ -53,6 +53,7 @@ boot_loop=$(losetup --find --show --offset $((boot_start * 512)) --sizelimit $((
 echo "==> Mounting"
 mkdir -p "$target"
 mount "$root_loop" "$target"
+mkdir -p "$target/boot/firmware"
 mount "$boot_loop" "$target/boot/firmware"
 mount --bind /dev "$target/dev"
 mount --bind /dev/pts "$target/dev/pts"
