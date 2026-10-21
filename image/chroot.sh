@@ -61,6 +61,7 @@ install_radio_os() {
     step "Copying radio-os to $radio_os_dir"
     rm -rf "$radio_os_dir"
     cp -a "$source_dir" "$radio_os_dir"
+    git -C "$radio_os_dir" remote set-url origin https://github.com/l-huisman/radio-os.git
     chown -R "$RADIO_USER:$RADIO_USER" "$radio_os_dir"
 }
 
