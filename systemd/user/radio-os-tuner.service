@@ -6,6 +6,7 @@ StartLimitIntervalSec=600
 StartLimitBurst=5
 
 [Service]
+ExecStartPre=-/usr/bin/amixer -q -c sndrpihifiberry sset Digital 100%
 ExecStart=%h/.local/share/radio/current/build/am_stereo_receiver
 Restart=on-failure
 RestartSec=3
