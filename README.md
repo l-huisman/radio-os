@@ -12,10 +12,25 @@ can be controlled from a Windows PC over Remote Desktop.
 - RTL-SDR Blog V3 dongle
 - HDMI monitor, keyboard, mouse, ethernet
 
-## Install
+## Install from a ready-made image (recommended)
+
+No monitor needed. On a Mac or Linux machine with Docker on arm64:
+
+```bash
+image/build.sh
+```
+
+It downloads Ubuntu Desktop 26.04.1 for the Pi, asks for the `ellenam` login
+password and the remote desktop username and password, and writes
+`build/radio-os.img` (12 GB). Flash it with Raspberry Pi Imager (Use custom) to
+a card of 16 GB or more, connect the HiFiBerry, the dongle and ethernet, and
+power on. The first boot takes a few minutes and finishes the remote desktop
+setup on its own.
+
+## Install on a running Pi
 
 1. Flash `ubuntu-26.04.1-preinstalled-desktop-arm64+raspi.img.xz` with Raspberry Pi Imager.
-2. Boot the Pi with ethernet and walk through the setup wizard:
+2. Boot the Pi with a monitor and ethernet and walk through the setup wizard:
    full name `EllenAM`, username `ellenam`, timezone Amsterdam.
 3. Open a terminal and run:
 
@@ -25,11 +40,20 @@ can be controlled from a Windows PC over Remote Desktop.
    cd radio-os && ./install.sh
    ```
 
-   It asks for a remote desktop username and password, and for the login
-   password (once, to empty the keyring). Building the tuner takes a few minutes.
 4. Reboot, then work through [docs/acceptance.md](docs/acceptance.md).
-5. On the MikroTik at the destination, make the Pi's DHCP lease static
-   (IP > DHCP Server > Leases > Make Static). `radio.local` works as a fallback.
+
+## Connecting
+
+- Make the Pi's DHCP lease static on the MikroTik
+  (IP > DHCP Server > Leases > Make Static) and connect to that address.
+  `radio.local` is announced too, but not every computer resolves it.
+- Windows: Remote Desktop Connection to the Pi's address. In a window,
+  right-click the title bar and turn on Smart sizing.
+- Mac: `sdl-freerdp /v:<address> /u:<user> /from-stdin:force /cert:ignore /smart-sizing /f`
+  (`brew install freerdp`).
+
+Remote desktop mirrors the Pi's screen, which is forced on at 1920x1080 so it
+also works without a monitor. The client scales it, the Pi does not resize.
 
 ## What install.sh sets up
 
@@ -40,9 +64,9 @@ can be controlled from a Windows PC over Remote Desktop.
 | Start | `radio-os-tuner` user service: starts at login, restarts after a crash, stays closed when the window is closed. The Radio icon in the dock reopens it |
 | First launch | 828 kHz, 9 kHz notch, stereo auto, 10 kHz bandwidth. Written only when the tuner has no settings yet |
 | Login | GDM automatic login, login keyring with an empty password, no screen lock, blanking or suspend |
-| Remote desktop | GNOME Desktop Sharing over RDP, mirrors the screen, with control |
+| Remote desktop | GNOME Desktop Sharing over RDP, mirrors the screen, with control. HDMI forced on at 1080p |
 | SSH | Keys from `github.com/l-huisman.keys` only, no passwords |
-| Updates | Security updates automatic, update and release pop-ups off, reboot every Monday at 04:00 |
+| Updates | Security updates automatic, update and release pop-ups off, reboot every Monday at 04:00 (skipped in the first hour after boot, when the clock jumps) |
 | Health | `radio-health` runs two minutes after login and logs what is missing |
 
 ## Updating the tuner
